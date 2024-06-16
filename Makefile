@@ -1,1 +1,4 @@
-# Will insert Makefile logic for ETL pipeline here. Adding this as a placeholder for now
+.PHONY: nldas 
+
+nldas: 
+	python scripts/retrieve_and_process_nldas.py

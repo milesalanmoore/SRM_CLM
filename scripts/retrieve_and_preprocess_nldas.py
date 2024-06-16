@@ -11,6 +11,10 @@ from distributed import wait
 
 
 ## Pathing ### ----------------
+wd = "/glade/u/home/milesmoore/SRM_CLM/scripts/"
+
+os.chdir(wd)
+
 cesm_forcing_dir = "/glade/campaign/cesm/cesmdata/inputdata/"
 nldas_dir = os.path.join(cesm_forcing_dir,
                          "atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1")
@@ -118,6 +122,7 @@ def build_sample_locations():
 # ------------------------------------------------------------------------------------------------------
 # Initiate Cluster
 # ------------------------------------------------------------------------------------------------------
+print('Starting dask cluster...')
 cluster, client = get_ClusterClient(nmem='2GB')
 cluster.scale(60) 
 # cluster
@@ -125,7 +130,7 @@ cluster.scale(60)
 # ------------------------------------------------------------------------------------------------------
 # Open all files and (optionally) preprocess nldas data to optimize memory 
 # ------------------------------------------------------------------------------------------------------
-
+print('-------- Reading in and preprocessing NLDAS data... --------')
 # Partially define function w lat lon bounds to subset by
 preprocess = partial(_preprocess, lon_bnds=lon_bnds, lat_bnds=lat_bnds, freq=freq)
 
@@ -150,7 +155,7 @@ print(tp_ds)
 
 print(f'Saving data to {output_dir} ...')
 precip_ds.to_netcdf(os.path.join(output_dir, "nldas_srm_precip.nc"))
-# tp_ds.to_netcdf(os.path.join(output_dir, "nldas_srm_tpqwl.nc"))
+tp_ds.to_netcdf(os.path.join(output_dir, "nldas_srm_tpqwl.nc"))
 
 print('Shutting down Dask Cluster...')
 client.shutdown()
@@ -165,17 +170,18 @@ client.shutdown()
 # ------------------------------------------------------------------------------------------------------
 
 if extract_samples:
+    
     points_da = build_sample_locations()
+    
     sampled_precip = precip_ds['PRECTmms'].sel(
         longitude=points_da.sel(coords='lon'),
         latitude=points_da.sel(coords='lat'),
-        method='nearest'
-    )
+        method='nearest')
+    
     sampled_tbot = tp_ds['TBOT'].sel(
-    longitude=points_da.sel(coords='lon'),
-    latitude=points_da.sel(coords='lat'),
-    method='nearest'
-)
+        longitude=points_da.sel(coords='lon'),
+        latitude=points_da.sel(coords='lat'),
+        method='nearest')
     
     # Convert to a DataFrame
     ppt_samples = sampled_precip.to_dataframe().reset_index()
